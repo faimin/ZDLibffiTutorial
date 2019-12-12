@@ -1,0 +1,20 @@
+PODS:
+  - libffi-core (1.2.0)
+  - ReactiveObjC (3.1.1)
+
+DEPENDENCIES:
+  - libffi-core
+  - ReactiveObjC
+
+SPEC REPOS:
+  trunk:
+    - libffi-core
+    - ReactiveObjC
+
+SPEC CHECKSUMS:
+  libffi-core: c4049ed88381fee5c0a31d26c860fc427d3c301c
+  ReactiveObjC: 011caa393aa0383245f2dcf9bf02e86b80b36040
+
+PODFILE CHECKSUM: 5462f8ed8780e61696f3fa3df321c6572ee02b84
+
+COCOAPODS: 1.8.4
