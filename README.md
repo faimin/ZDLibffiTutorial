@@ -1,0 +1,2 @@
+# ZDLibffiDemo
+usage of libffi
