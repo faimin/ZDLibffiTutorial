@@ -112,20 +112,42 @@ static int cFunc(int a , int b, int c) {
     return ret;
 }
 
-#pragma mark - HookC
+#pragma mark - BindC
+
+struct UserData {
+    char *c;
+    int a;
+    void *imp;
+};
+
+static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
+    struct UserData ud = *(struct UserData *)userdata;
+    *ret = 999;
+    printf("==== %s, %d\n", ud.c, *(int *)ret);
+    
+    //ffi_call(cif, ud.imp, ret, args); //再调用此方法会进入死循环
+}
 
 - (void)testHookCFunc {
     ffi_cif cif;
-    ffi_type *argTypes[] = {&ffi_type_sint, &ffi_type_sint};
-    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 2, &ffi_type_sint, argTypes);
-
-    int a = 123;
-    int b = 456;
-    void *args[] = {&a, &b};
-    int retValue;
-    ffi_call(&cif, (void *)cFunc, &retValue, args);
-    //int m = cFunc(a, b);
+    ffi_type *argTypes[] = {&ffi_type_sint, &ffi_type_sint, &ffi_type_sint};
+    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 3, &ffi_type_sint, argTypes);
     
+    // 新定义一个C函数指针
+    int(*newCFunc)(int, int, int);
+    ffi_closure *cloure = ffi_closure_alloc(sizeof(ffi_closure), (void *)&newCFunc);
+    struct UserData userdata = {"我是你爸爸", 8888, newCFunc};
+    // 将newCFunc与bingCFunc关联
+    ffi_status status = ffi_prep_closure_loc(cloure, &cif, (void *)bindCFunc, &userdata, newCFunc);
+    if (status != FFI_OK) {
+        NSLog(@"新函数指针生成失败");
+        return;
+    }
+    
+    int ret = newCFunc(11, 34, 24);
+    printf("********** %d\n", ret);
+    
+    ffi_closure_free(cloure);
 }
 
 @end
