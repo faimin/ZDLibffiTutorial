@@ -208,3 +208,7 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 2. [libffi-iOS](https://github.com/sunnyxx/libffi-iOS)
 
 3. [使用libffi实现AOP](https://juejin.im/post/5a600d20518825732c539622)
+
+4. [libffi文档](http://www.chiark.greenend.org.uk/doc/libffi-dev/html/Index.html#Index)
+
+
