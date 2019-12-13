@@ -29,9 +29,6 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     
-//    [self testCallCFunc];
-    
-//    [self testCallObjc];
 //    [self testHookOC];
     
     id r = [self x:110 y:@"阿尔托莉雅·潘德拉贡" z:NSObject.new];

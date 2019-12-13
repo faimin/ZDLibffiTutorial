@@ -31,8 +31,26 @@
 - (void)testPerformanceExample {
     // This is an example of a performance test case.
     [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-        
+        [self testCallObjC];
+    }];
+}
+
+- (void)testInvocationPerformance {
+    [self measureBlock:^{
+        NSInteger arg1 = 100;
+        NSString *arg2 = @"hello";
+        id arg3 = NSObject.class;
+        __unsafe_unretained id retValue = nil;
+
+        SEL selector = @selector(a:b:c:);
+        NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
+        [invocation setSelector:selector];
+        [invocation setArgument:&arg1 atIndex:2];
+        [invocation setArgument:&arg2 atIndex:3];
+        [invocation setArgument:&arg3 atIndex:4];
+        [invocation invokeWithTarget:self];
+        [invocation getReturnValue:&retValue];
+        NSLog(@"### %@", retValue);
     }];
 }
 
@@ -58,10 +76,9 @@ static int cFunc(int a , int b, int c) {
     args[0] = &a;
     args[1] = &b;
     args[2] = &c;
-    
     int retValue;
     ffi_call(&cif, (void *)cFunc, &retValue, args);
-    free(args);
+    free(*args);
     
     int m = cFunc(a, b, c);
     
@@ -71,7 +88,7 @@ static int cFunc(int a , int b, int c) {
 #pragma mark - 调用OC方法
 
 // 直接调用OC方法
-- (void)testCallObjc {
+- (void)testCallObjC {
     SEL selector = @selector(a:b:c:);
     NSMethodSignature *signature = [self methodSignatureForSelector:selector];
     
