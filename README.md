@@ -2,11 +2,11 @@
 
 ### 一、libffi简介
 
-        简单来说，[libffi](https://github.com/libffi/libffi) 可根据 **参数类型**(`ffi_type`)，**参数个数** 生成一个 **模板**(`ffi_cif`)；可以输入 **模板**、**函数指针** 和 **参数地址** 来直接完成 **函数调用**(`ffi_call`)； **模板** 也可以生成一个所谓的 **闭包**(`ffi_closure`)，并得到指针，当执行到这个地址时，会执行到自定义的`void function(ffi_cif *cif, void *ret, void **args, void *userdata)`函数，在这里，我们可以获得所有参数的地址(包括返回值)，以及自定义数据`userdata`。当然，在这个函数里我们可以做一些额外的操作。
+        [libffi](https://github.com/libffi/libffi) 可根据 **参数类型**(`ffi_type`)，**参数个数** 生成一个 **模板**(`ffi_cif`)；可以输入 **模板**、**函数指针** 和 **参数地址** 来直接完成 **函数调用**(`ffi_call`)； **模板** 也可以生成一个所谓的 **闭包**(`ffi_closure`)，并得到指针，当执行到这个地址时，会执行到自定义的`void function(ffi_cif *cif, void *ret, void **args, void *userdata)`函数，在这里，我们可以获得所有参数的地址(包括返回值)，以及自定义数据`userdata`。
 
-        libffi 能调用任意 C 函数的原理与`objc_msgSend`的原理类似，其底层是用汇编实现的，`ffi_call`根据模板cif和参数值，把参数都按规则塞到栈/寄存器里，调用的函数可以按规则得到参数，调用完再获取返回值，清理数据。通过其他方式调用上文中的`imp`，`ffi_closure`可根据栈/寄存器、模板`cif`拿到所有的参数，接着执行自定义函数`ffi_function`里的代码。
+        libffi 能调用任意 `C` 函数的原理与`objc_msgSend`的原理类似，其底层是用汇编实现的，`ffi_call`根据模板`cif`和`参数值`，把参数都按规则塞到栈/寄存器，调用的函数可以按规则得到参数，调用完再获取返回值，清理数据。通过其他方式调用上文中的`imp`，`ffi_closure`可根据栈/寄存器、模板`cif`拿到所有的参数，接着执行自定义函数`xxx_func`。
 
-        到这里，对于如何hook ObjC方法和实现AOP，想必大家已经有了一些思路，我们可以将`ffi_closure`关联的指针替换原方法的IMP，当对象收到该方法的消息时`objc_msgSend(id self, SEL sel, ...)`，将最终执行自定义函数`void ffi_function(ffi_cif *cif, void *ret, void **args, void *userdata)`。而实现这一切的主要工作是：设计可行的结构，存储类的多个hook信息；根据包含不同参数的方法和切面block，生成包含匹配`ffi_type`的cif；替换类某个方法的实现为`ffi_closure`关联的imp，记录hook；在`ffi_function`里，根据获得的参数，动态调用原始imp和block。
+        看完以上介绍，是否想到了`hook`操作？！我们可以将`ffi_closure`关联的指针替换原方法的`IMP`，当对象收到该方法的消息时`objc_msgSend(id self, SEL sel, ...)`，将最终执行自定义函数`void xxx_func(ffi_cif *cif, void *ret, void **args, void *userdata)`，在`xxx_func`里`userdata`会派上很大用处，我们可以通过它传递我们想要的信息，比如原始函数指针。
 
 ### 二、 用法
 
