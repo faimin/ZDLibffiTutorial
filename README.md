@@ -91,7 +91,43 @@ int cFunc(int a , int b) {
 }
 ```
 
-##### 3. 生成切面函数
+#### 3. 关联C函数
+
+```c
+static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
+    struct UserData ud = *(struct UserData *)userdata;
+    *ret = 999;
+    printf("==== %s, %d\n", ud.c, *(int *)ret);
+    
+    //ffi_call(cif, ud.imp, ret, args); //再调用此方法会进入死循环
+}
+
+- (void)testBindCFunc {
+    ffi_cif cif;
+    ffi_type *argTypes[] = {&ffi_type_sint, &ffi_type_sint, &ffi_type_sint};
+    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 3, &ffi_type_sint, argTypes);
+    
+    // 新定义一个C函数指针
+    int(*newCFunc)(int, int, int);
+    ffi_closure *cloure = ffi_closure_alloc(sizeof(ffi_closure), (void *)&newCFunc);
+    struct UserData userdata = {"我是你爸爸", 8888, newCFunc};
+    // 将newCFunc与bingCFunc关联
+    ffi_status status = ffi_prep_closure_loc(cloure, &cif, (void *)bindCFunc, &userdata, newCFunc);
+    if (status != FFI_OK) {
+        NSLog(@"新函数指针生成失败");
+        return;
+    }
+    
+    int ret = newCFunc(11, 34, 24);
+    printf("********** %d\n", ret);
+    
+    ffi_closure_free(cloure);
+}
+```
+
+
+
+##### 4. 生成切面函数
 
 >  大家熟知的几种方式：
 > 
@@ -182,9 +218,7 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
    > 
    > + 支持调用`C`、`Objective-C`
    > 
-   > + 不用进入消息转发的流程即可实现`hook`
-   > 
-   > + `hook`比较方便
+   > + 
 
 2. 缺点：
    
@@ -210,5 +244,3 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 3. [使用libffi实现AOP](https://juejin.im/post/5a600d20518825732c539622)
 
 4. [libffi文档](http://www.chiark.greenend.org.uk/doc/libffi-dev/html/Index.html#Index)
-
-

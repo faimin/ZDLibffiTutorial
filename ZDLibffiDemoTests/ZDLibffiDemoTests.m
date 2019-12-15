@@ -72,13 +72,12 @@ static int cFunc(int a , int b, int c) {
     int b = 456;
     int c = 890;
     
-    void **args = malloc(sizeof(ffi_type *) * 3);
+    void **args = alloca(sizeof(void *) * 3);
     args[0] = &a;
     args[1] = &b;
     args[2] = &c;
     int retValue;
     ffi_call(&cif, (void *)cFunc, &retValue, args);
-    free(*args);
     
     int m = cFunc(a, b, c);
     
@@ -128,7 +127,7 @@ static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
     //ffi_call(cif, ud.imp, ret, args); //再调用此方法会进入死循环
 }
 
-- (void)testHookCFunc {
+- (void)testBindCFunc {
     ffi_cif cif;
     ffi_type *argTypes[] = {&ffi_type_sint, &ffi_type_sint, &ffi_type_sint};
     ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 3, &ffi_type_sint, argTypes);
