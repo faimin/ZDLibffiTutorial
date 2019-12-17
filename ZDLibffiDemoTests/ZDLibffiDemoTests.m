@@ -9,6 +9,9 @@
 #import <XCTest/XCTest.h>
 #import "NSObject+ZDAOP.h"
 
+static const NSUInteger MaxCount = 10000;
+#define HOOK 0
+
 @interface ZDLibffiDemoTests : XCTestCase
 
 @end
@@ -17,6 +20,11 @@
 
 - (void)setUp {
     // Put setup code here. This method is called before the invocation of each test method in the class.
+#if HOOK
+    [self.class zd_hookInstanceMethod:@selector(a:b:c:) option:ZDHookOption_After callback:^(NSInteger a, NSString *b, id c){
+        //NSLog(@"###########收到Hook信息 ==> 小狗%zd岁了, %@, %@", a, b, c);
+    }];
+#endif
 }
 
 - (void)tearDown {
@@ -28,33 +36,79 @@
     // Use XCTAssert and related functions to verify your tests produce the correct results.
 }
 
-- (void)testPerformanceExample {
+#pragma mark - 性能测试
+
+// 用libffi执行oc方法的效率
+- (void)testLibffiPerformance {
     // This is an example of a performance test case.
     [self measureBlock:^{
-        [self testCallObjC];
+        for (NSInteger i = 0; i < MaxCount; ++i) {
+            SEL selector = @selector(a:b:c:);
+            NSMethodSignature *signature = [self methodSignatureForSelector:selector];
+            
+            ffi_cif cif;
+            ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_pointer, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
+            ffi_prep_cif(&cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_pointer, argTypes);
+            
+            NSInteger arg1 = 100;
+            NSString *arg2 = @"hello";
+            id arg3 = NSObject.class;
+            void *args[] = {(void *)&self, &selector, &arg1, &arg2, &arg3};
+            __unsafe_unretained id ret = nil;
+            IMP func = [self methodForSelector:selector];
+            ffi_call(&cif, func, &ret, args);
+        }
     }];
 }
 
+// Invitation执行OC方法的效率
 - (void)testInvocationPerformance {
     [self measureBlock:^{
-        NSInteger arg1 = 100;
-        NSString *arg2 = @"hello";
-        id arg3 = NSObject.class;
-        __unsafe_unretained id retValue = nil;
+        for (NSInteger i = 0; i < MaxCount; ++i) {
+            NSInteger arg1 = 100;
+            NSString *arg2 = @"hello";
+            id arg3 = NSObject.class;
+            __unsafe_unretained id retValue = nil;
 
-        SEL selector = @selector(a:b:c:);
-        NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
-        [invocation setSelector:selector];
-        [invocation setArgument:&arg1 atIndex:2];
-        [invocation setArgument:&arg2 atIndex:3];
-        [invocation setArgument:&arg3 atIndex:4];
-        [invocation invokeWithTarget:self];
-        [invocation getReturnValue:&retValue];
-        NSLog(@"### %@", retValue);
+            SEL selector = @selector(a:b:c:);
+            NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
+            [invocation setSelector:selector];
+            [invocation setArgument:&arg1 atIndex:2];
+            [invocation setArgument:&arg2 atIndex:3];
+            [invocation setArgument:&arg3 atIndex:4];
+            [invocation invokeWithTarget:self];
+            [invocation getReturnValue:&retValue];
+            //NSLog(@"### %@", retValue);
+        }
+    }];
+}
+
+// 直接执行OC方法的效率
+- (void)testOCPerformance {
+    [self measureBlock:^{
+        for (NSInteger i = 0; i < MaxCount; ++i) {
+            NSInteger arg1 = 100;
+            NSString *arg2 = @"hello";
+            id arg3 = NSObject.class;
+            [self a:arg1 b:arg2 c:arg3];
+        }
+    }];
+}
+
+// 执行hook之后的OC方法的效率
+- (void)testOCPerformanceAfterHook {
+    [self measureBlock:^{
+        for (NSInteger i = 0; i < MaxCount; ++i) {
+            NSInteger arg1 = 100;
+            NSString *arg2 = @"hello";
+            id arg3 = NSObject.class;
+            [self a:arg1 b:arg2 c:arg3];
+        }
     }];
 }
 
 //#########################################################
+#pragma mark - #######################################################
 
 #pragma mark - 调用C函数
 
@@ -102,12 +156,12 @@ static int cFunc(int a , int b, int c) {
     __unsafe_unretained id ret = nil;
     IMP func = [self methodForSelector:selector];
     ffi_call(&cif, func, &ret, args);
-    NSLog(@"===== %@", ret);
+    //NSLog(@"===== %@", ret);
 }
 
 - (id)a:(NSInteger)a b:(NSString *)b c:(NSObject *)c {
     NSString *ret = [NSString stringWithFormat:@"%zd + %@ + %@", a, b, c];
-    NSLog(@"result = %@", ret);
+    //NSLog(@"result = %@", ret);
     return ret;
 }
 
@@ -147,6 +201,27 @@ static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
     printf("********** %d\n", ret);
     
     ffi_closure_free(cloure);
+}
+
+#pragma mark - HookOC
+
+static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
+    ZDFfiHookInfo *info = (__bridge ZDFfiHookInfo *)userdata;
+    
+    // 打印参数
+    NSMethodSignature *methodSignature = info.signature;
+    NSInteger beginIndex = 2;
+    if (info.isBlock) {
+        beginIndex = 1;
+    }
+    for (NSInteger i = beginIndex; i < methodSignature.numberOfArguments; ++i) {
+        id argValue = ZD_ArgumentAtIndex(methodSignature, args, i);
+        NSLog(@"arg ==> index: %ld, value: %@", i, argValue);
+    }
+    
+    // https://github.com/sunnyxx/libffi-iOS/blob/master/Demo/ViewController.m
+    // 根据cif (函数原型，函数指针，返回值内存指针，函数参数) 调用这个函数
+    ffi_call(cif, info->_originalIMP, ret, args);
 }
 
 @end
