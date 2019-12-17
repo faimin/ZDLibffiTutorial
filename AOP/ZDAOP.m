@@ -68,6 +68,9 @@
 static void ZD_ffi_closure_func(ffi_cif *cif, void *ret, void **args, void *userdata) {
     ZDFfiHookInfo *info = (__bridge ZDFfiHookInfo *)userdata;
     
+    NSMethodSignature *methodSignature = info.signature;
+    
+#if DEBUG && 0
     int argCount = 0;
     while (args[argCount]) {
         argCount++;
@@ -75,7 +78,6 @@ static void ZD_ffi_closure_func(ffi_cif *cif, void *ret, void **args, void *user
     printf("参数个数：-------- %d\n", argCount);
     
     // 打印参数
-    NSMethodSignature *methodSignature = info.signature;
     NSInteger beginIndex = 2;
     if (info.isBlock) {
         beginIndex = 1;
@@ -84,13 +86,13 @@ static void ZD_ffi_closure_func(ffi_cif *cif, void *ret, void **args, void *user
         id argValue = ZD_ArgumentAtIndex(methodSignature, args, i);
         NSLog(@"arg ==> index: %zd, value: %@", i, argValue);
     }
-    
+#endif
     
     id callbackBlock = info.callback;
     __auto_type callbackArgsBlock = ^void **{
         // block没有SEL,所以比普通方法少一个参数
         void **callbackArgs = calloc(methodSignature.numberOfArguments - 1, sizeof(void *));
-        callbackArgs[0] = &callbackBlock;
+        callbackArgs[0] = (void *)&callbackBlock;
         // 从index=2位置开始把args中的数据拷贝到callbackArgs(从index=1开始，第0个位置留给block自己)中
         memcpy(callbackArgs + 1, args + 2, sizeof(*args)*(methodSignature.numberOfArguments - 2));
         /*
