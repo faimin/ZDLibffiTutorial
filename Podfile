@@ -7,6 +7,7 @@ target 'ZDLibffiDemo' do
 
   # Pods for ZDLibffiDemo
   pod 'libffi-core'
+  pod 'Aspects'
   pod 'ReactiveObjC'
 
   target 'ZDLibffiDemoTests' do

@@ -38,7 +38,7 @@ typedef NS_ENUM(NSInteger, ZDHookOption) {
 //*******************************************************
 
 @interface ZDFfiHookInfo : NSObject {
-    @package
+    @public
     ffi_cif *_cif;
     ffi_type **_argTypes;
     ffi_closure *_closure;

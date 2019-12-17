@@ -9,8 +9,7 @@
 #import <XCTest/XCTest.h>
 #import "NSObject+ZDAOP.h"
 
-static const NSUInteger MaxCount = 10000;
-#define HOOK 0
+NSUInteger const MaxCount = 10000;
 
 @interface ZDLibffiDemoTests : XCTestCase
 
@@ -20,11 +19,7 @@ static const NSUInteger MaxCount = 10000;
 
 - (void)setUp {
     // Put setup code here. This method is called before the invocation of each test method in the class.
-#if HOOK
-    [self.class zd_hookInstanceMethod:@selector(a:b:c:) option:ZDHookOption_After callback:^(NSInteger a, NSString *b, id c){
-        //NSLog(@"###########收到Hook信息 ==> 小狗%zd岁了, %@, %@", a, b, c);
-    }];
-#endif
+    
 }
 
 - (void)tearDown {
@@ -34,77 +29,6 @@ static const NSUInteger MaxCount = 10000;
 - (void)testExample {
     // This is an example of a functional test case.
     // Use XCTAssert and related functions to verify your tests produce the correct results.
-}
-
-#pragma mark - 性能测试
-
-// 用libffi执行oc方法的效率
-- (void)testLibffiPerformance {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        for (NSInteger i = 0; i < MaxCount; ++i) {
-            SEL selector = @selector(a:b:c:);
-            NSMethodSignature *signature = [self methodSignatureForSelector:selector];
-            
-            ffi_cif cif;
-            ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_pointer, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
-            ffi_prep_cif(&cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_pointer, argTypes);
-            
-            NSInteger arg1 = 100;
-            NSString *arg2 = @"hello";
-            id arg3 = NSObject.class;
-            void *args[] = {(void *)&self, &selector, &arg1, &arg2, &arg3};
-            __unsafe_unretained id ret = nil;
-            IMP func = [self methodForSelector:selector];
-            ffi_call(&cif, func, &ret, args);
-        }
-    }];
-}
-
-// Invitation执行OC方法的效率
-- (void)testInvocationPerformance {
-    [self measureBlock:^{
-        for (NSInteger i = 0; i < MaxCount; ++i) {
-            NSInteger arg1 = 100;
-            NSString *arg2 = @"hello";
-            id arg3 = NSObject.class;
-            __unsafe_unretained id retValue = nil;
-
-            SEL selector = @selector(a:b:c:);
-            NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
-            [invocation setSelector:selector];
-            [invocation setArgument:&arg1 atIndex:2];
-            [invocation setArgument:&arg2 atIndex:3];
-            [invocation setArgument:&arg3 atIndex:4];
-            [invocation invokeWithTarget:self];
-            [invocation getReturnValue:&retValue];
-            //NSLog(@"### %@", retValue);
-        }
-    }];
-}
-
-// 直接执行OC方法的效率
-- (void)testOCPerformance {
-    [self measureBlock:^{
-        for (NSInteger i = 0; i < MaxCount; ++i) {
-            NSInteger arg1 = 100;
-            NSString *arg2 = @"hello";
-            id arg3 = NSObject.class;
-            [self a:arg1 b:arg2 c:arg3];
-        }
-    }];
-}
-
-// 执行hook之后的OC方法的效率
-- (void)testOCPerformanceAfterHook {
-    [self measureBlock:^{
-        for (NSInteger i = 0; i < MaxCount; ++i) {
-            NSInteger arg1 = 100;
-            NSString *arg2 = @"hello";
-            id arg3 = NSObject.class;
-            [self a:arg1 b:arg2 c:arg3];
-        }
-    }];
 }
 
 //#########################################################
@@ -165,16 +89,17 @@ static int cFunc(int a , int b, int c) {
     return ret;
 }
 
+#pragma mark - --------------------------
 #pragma mark - BindC
 
-struct UserData {
+struct ZDUserData {
     char *c;
     int a;
     void *imp;
 };
 
 static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
-    struct UserData ud = *(struct UserData *)userdata;
+    struct ZDUserData ud = *(struct ZDUserData *)userdata;
     *ret = 999;
     printf("==== %s, %d\n", ud.c, *(int *)ret);
     
@@ -189,7 +114,7 @@ static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
     // 新定义一个C函数指针
     int(*newCFunc)(int, int, int);
     ffi_closure *cloure = ffi_closure_alloc(sizeof(ffi_closure), (void *)&newCFunc);
-    struct UserData userdata = {"我是你爸爸", 8888, newCFunc};
+    struct ZDUserData userdata = {"我是你爸爸", 8888, newCFunc};
     // 将newCFunc与bingCFunc关联
     ffi_status status = ffi_prep_closure_loc(cloure, &cif, (void *)bindCFunc, &userdata, newCFunc);
     if (status != FFI_OK) {
@@ -222,6 +147,56 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
     // https://github.com/sunnyxx/libffi-iOS/blob/master/Demo/ViewController.m
     // 根据cif (函数原型，函数指针，返回值内存指针，函数参数) 调用这个函数
     ffi_call(cif, info->_originalIMP, ret, args);
+}
+
+- (void)testHookOC {
+    SEL selector = @selector(x:y:z:);
+    NSMethodSignature *signature = [self methodSignatureForSelector:selector];
+    IMP originIMP = [self methodForSelector:selector];
+    
+    //ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_pointer, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
+    ffi_type **argTypes = calloc(signature.numberOfArguments, sizeof(ffi_type *));
+    argTypes[0] = &ffi_type_pointer;
+    argTypes[1] = &ffi_type_schar;
+    argTypes[2] = &ffi_type_sint;
+    argTypes[3] = &ffi_type_pointer;
+    argTypes[4] = &ffi_type_pointer;
+    
+    ffi_cif *cif = calloc(1, sizeof(ffi_cif));
+    ffi_prep_cif(cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_pointer, argTypes);
+    
+    IMP newIMP = NULL;
+    ffi_closure *cloure = ffi_closure_alloc(sizeof(ffi_closure), (void *)&newIMP);
+    ZDFfiHookInfo *info = ({
+        ZDFfiHookInfo *model = ZDFfiHookInfo.new;
+        model->_cif = cif;
+        model->_argTypes = argTypes;
+        model->_closure = cloure;
+        model->_originalIMP = originIMP;
+        model->_newIMP = newIMP;
+        model.signature = signature;
+        model;
+    });
+    ffi_status status = ffi_prep_closure_loc(cloure, cif, zdfunc, (__bridge void *)info, newIMP);
+    if (status != FFI_OK) {
+        NSLog(@"新函数指针生成失败");
+        return;
+    }
+    
+    //替换实现
+    Method method = class_getInstanceMethod(self.class, selector);
+    method_setImplementation(method, newIMP);
+    
+    NSInteger arg1 = 100;
+    NSString *arg2 = @"Zero.D.Saber";
+    id arg3 = @(909090);
+    [self x:arg1 y:arg2 z:arg3];
+}
+
+- (id)x:(NSInteger)a y:(NSString *)b z:(id)c {
+    NSString *ret = [NSString stringWithFormat:@"%zd + %@ + %@", a, b, c];
+    NSLog(@"result = %@", ret);
+    return ret;
 }
 
 @end
