@@ -2,14 +2,22 @@
 
 ### 一、libffi简介
 
-        [libffi](https://github.com/libffi/libffi) 可根据 **参数类型**(`ffi_type`)，**参数个数** 生成一个 **模板**(`ffi_cif`)；可以输入 **模板**、**函数指针** 和 **参数地址** 来直接完成 **函数调用**(`ffi_call`)； **模板** 也可以生成一个所谓的 **闭包**(`ffi_closure`)，并得到指针，当执行到这个地址时，会执行到自定义的`void function(ffi_cif *cif, void *ret, void **args, void *userdata)`函数，在这里，我们可以获得所有参数的地址(包括返回值)，以及自定义数据`userdata`。
+>  维基百科： 
+>
+> [libffi](https://github.com/libffi/libffi) 是一个外部函数接口库。它提供了一个C编程语言接口，用于在运行时（而不是编译时）给定有关目标函数的信息来调用本地编译函数。它还实现了相反的功能：`libffi`可以生成一个指向可以接受和解码在运行时定义的参数组合的函数的指针。
 
-        `libffi` 能调用任意 `C` 函数的原理与`objc_msgSend`的原理类似，其底层是用汇编实现的，`ffi_call`根据模板`cif`和`参数值`，把参数都按规则塞到栈/寄存器，调用的函数可以按规则得到参数，调用完再获取返回值，清理数据。通过其他方式调用上文中的`imp`，`ffi_closure`可根据栈/寄存器、模板`cif`拿到所有的参数，接着执行自定义函数`xxx_func`。
-         看完以上介绍，是否想到了`hook`操作？！我们可以将`ffi_closure`关联的指针替换原方法的`IMP`，当对象收到该方法的消息时`objc_msgSend(id self, SEL sel, ...)`，将最终执行自定义函数`void xxx_func(ffi_cif *cif, void *ret, void **args, void *userdata)`，在`xxx_func`里的参数`userdata`会派上很大用处，我们可以通过它传递我们需要的信息，比如原始函数指针，这样我们就可以愉快的玩耍了😄。
+`FFI（Foreign Function Interface）`允许以一种语言编写的代码调用另一种语言的代码，而[libffi](https://github.com/libffi/libffi)库提供了最底层的、与架构相关的、完整的`FFI`。`libffi`的作用就相当于编译器，它为多种调用规则提供了一系列高级语言编程接口，然后通过相应接口完成函数调用，底层会根据对应的规则，完成数据准备，生成相应的汇编指令代码。
 
-### 二、 用法
+    [libffi](https://github.com/libffi/libffi) 被称为`C语言的runtime`，它可根据 `参数类型`(`ffi_type`)、`参数个数`生成一个模板(`ffi_cif`)，然后通过`模板`、`函数指针` 、`参数地址` 来直接完成函数的调用(`ffi_call`)。
 
-主要流程：
+    它也可以生成一个`闭包`(`ffi_closure`)，并同时得到一个函数指针`newIMP`，把这个新的函数指针`newIMP`与自定义的函数`void xx_func(ffi_cif *cif, void *ret, void **args, void *userdata)` 关联到一起，然后当我们执行`newIMP`时，会执行到我们自定义的`xx_func_`函数里（这个函数的参数格式是固定的），这里我们可以获得所有参数的地址和返回值以及自定义数据`userdata`。最后我们通过`ffi_call`函数来调用其他函数，简要流程是通过模板`cif`和`参数值`，把参数都按规则塞到栈/寄存器，然后调用的函数可以按规则获取到参数，调用完再获取返回值，最后记得释放内存。
+
+### 二、用法
+
+我们都知道`Objective-C`底层最终都会转成`objc_msgsend`这个`C`层的函数，而 `libffi` 能调用任意 `C` 函数，所以这也是`libffi`支持`Objective-C`的原因。`libffi`底层也是用汇编实现的。
+
+<details close>
+<summary> 先介绍一下`libffi`使用流程： </summary>
 
 ```c
 //1. 生成参数类型列表
@@ -41,7 +49,13 @@ void ffi_call(ffi_cif *cif,
 ffi_closure_free(void *)
 ```
 
+</details>
+
+
 ##### 1. 调用C函数
+
+<details>
+<summary> Code </summary>
 
 ```c
 int cFunc(int a , int b) {
@@ -62,7 +76,13 @@ int cFunc(int a , int b) {
 }
 ```
 
+</details>
+
+
 ##### 2.调用OC方法
+
+<details close>
+<summary> Code </summary>
 
 ```objectivec
 // 直接调用OC方法
@@ -91,14 +111,20 @@ int cFunc(int a , int b) {
 }
 ```
 
+</details>
+
+
 #### 3. 关联C函数
+
+<details close>
+<summary> Code </summary>
 
 ```c
 static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
     struct UserData ud = *(struct UserData *)userdata;
     *ret = 999;
     printf("==== %s, %d\n", ud.c, *(int *)ret);
-    
+
     //ffi_call(cif, ud.imp, ret, args); //再调用此方法会进入死循环
 }
 
@@ -106,38 +132,42 @@ static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
     ffi_cif cif;
     ffi_type *argTypes[] = {&ffi_type_sint, &ffi_type_sint, &ffi_type_sint};
     ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 3, &ffi_type_sint, argTypes);
-    
+
     // 新定义一个C函数指针
     int(*newCFunc)(int, int, int);
     ffi_closure *cloure = ffi_closure_alloc(sizeof(ffi_closure), (void *)&newCFunc);
-    struct UserData userdata = {"我是你爸爸", 8888, newCFunc};
+    struct UserData userdata = {"圣诞快乐", 8888, newCFunc};
     // 将newCFunc与bingCFunc关联
     ffi_status status = ffi_prep_closure_loc(cloure, &cif, (void *)bindCFunc, &userdata, newCFunc);
     if (status != FFI_OK) {
         NSLog(@"新函数指针生成失败");
         return;
     }
-    
+
     int ret = newCFunc(11, 34, 24);
     printf("********** %d\n", ret);
-    
+
     ffi_closure_free(cloure);
 }
 ```
 
+</details>
 
 
-##### 4. 生成切面函数
+##### 4. 生成`OC`切面函数
 
->  大家熟知的几种方式：
+>  大家熟知的几种hook方式：
 > 
 > 1. 方法交换
 > 
 >         什么addMethod啊、replaceMethod啊，exchangMethod啊
 > 
-> 2. 消息转发
+> 2. 消息转发（[Aspects](https://github.com/steipete/Aspects)）
 > 
 > 3. 分类覆盖原方法
+
+<details close>
+<summary> Code </summary>
 
 ```objectivec
 static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
@@ -204,9 +234,12 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 }
 ```
 
+</details>
+
+
 ### 三、如何 hook 单个实例对象？
 
-##### 基本原理：
+> 只提供思路
 
 仿照`KVO`的实现机制，以当前实例对象所属类为父类，动态创建一个新的子类，把当前实例的`isa`设置为新建的子类，并重写`class`方法。接下来只要  `hook` 这个子类就可以了；
 
@@ -214,33 +247,40 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 
 1. libffi的优势：
    
-   > + 跨平台
+   > + 支持多平台
    > 
    > + 支持调用`C`、`Objective-C`
    > 
-   > + 
+   > + 快
+   > 
+   > + 可以做到像[Aspects](https://github.com/steipete/Aspects)一样多次`hook`同一方法
+   > 
+   > + 可以像`NSInvocation`动态调用`Objective-C`
 
 2. 缺点：
    
-   > + 使用时需要创建模版函数
-   > + 非原生，有时需要手动管理内存的生命周期
+   > + 构建模版函数时像构建`NSInvocation`一样撕心裂肺
 
 3. 使用场景：
    
    > + `hook` 原生方法
    > 
-   > + 替代`performSelector:`、`NSInvocation`调用`OC`方法
+   > + 替代`performSelector:`、`NSInvocation`调用`Objective-C`方法
 
-## 其他：
+### 其他：
+
+> 通过`消息转发`和`libffi`两种方式实现对block的`hook`
 
 + [ZDBlockHook](https://github.com/faimin/ZDBlockHook)
 
-## 参考：
+### 参考：
 
-1. [libffi](https://github.com/libffi/libffi)
+- [libffi](https://github.com/libffi/libffi)
 
-2. [libffi-iOS](https://github.com/sunnyxx/libffi-iOS)
+- [libffi-iOS](https://github.com/sunnyxx/libffi-iOS)
 
-3. [使用libffi实现AOP](https://juejin.im/post/5a600d20518825732c539622)
+- [libffi文档](http://www.chiark.greenend.org.uk/doc/libffi-dev/html/Index.html#Index)
 
-4. [libffi文档](http://www.chiark.greenend.org.uk/doc/libffi-dev/html/Index.html#Index)
+- [使用libffi实现AOP](https://juejin.im/post/5a600d20518825732c539622)
+
+- [动态调用&定义C函数](https://www.jianshu.com/p/92d4c06223e7)
