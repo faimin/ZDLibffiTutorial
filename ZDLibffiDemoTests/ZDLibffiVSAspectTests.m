@@ -12,7 +12,7 @@
 #import <Aspects/Aspects.h>
 
 FOUNDATION_EXPORT NSUInteger const MaxCount;
-#define HOOK_Libffi (0)
+#define HOOK_Libffi (1)
 
 @interface ZDLibffiVSAspectTests : XCTestCase
 
