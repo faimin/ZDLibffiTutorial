@@ -5,11 +5,12 @@
 //  Created by Zero.D.Saber on 2019/12/12.
 //  Copyright © 2019 Zero.D.Saber. All rights reserved.
 //
+//  libffi基本用法
 
 #import <XCTest/XCTest.h>
 #import "NSObject+ZDAOP.h"
 
-NSUInteger const MaxCount = 10000;
+NSUInteger const MaxCount = 100000;
 
 @interface ZDLibffiDemoTests : XCTestCase
 
@@ -69,9 +70,9 @@ static int cFunc(int a , int b, int c) {
     SEL selector = @selector(a:b:c:);
     NSMethodSignature *signature = [self methodSignatureForSelector:selector];
     
-    ffi_cif cif;
+    ffi_cif *cif = alloca(sizeof(ffi_cif));
     ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_pointer, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
-    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_pointer, argTypes);
+    ffi_prep_cif(cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_pointer, argTypes);
     
     NSInteger arg1 = 100;
     NSString *arg2 = @"hello";
@@ -79,13 +80,13 @@ static int cFunc(int a , int b, int c) {
     void *args[] = {&self, &selector, &arg1, &arg2, &arg3};
     __unsafe_unretained id ret = nil;
     IMP func = [self methodForSelector:selector];
-    ffi_call(&cif, func, &ret, args);
-    //NSLog(@"===== %@", ret);
+    ffi_call(cif, func, &ret, args);
+    NSLog(@"===== %@", ret);
 }
 
-- (id)a:(NSInteger)a b:(NSString *)b c:(NSObject *)c {
+- (id)a:(NSInteger)a b:(NSString *)b c:(id)c {
     NSString *ret = [NSString stringWithFormat:@"%zd + %@ + %@", a, b, c];
-    //NSLog(@"result = %@", ret);
+    NSLog(@"result = %@", ret);
     return ret;
 }
 
@@ -109,12 +110,13 @@ static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
 - (void)testBindCFunc {
     ffi_cif cif;
     ffi_type *argTypes[] = {&ffi_type_sint, &ffi_type_sint, &ffi_type_sint};
-    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 3, &ffi_type_sint, argTypes);
+    unsigned int argTypesCount = sizeof(argTypes) / sizeof(ffi_type *);
+    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, argTypesCount, &ffi_type_sint, argTypes);
     
     // 新定义一个C函数指针
-    int(*newCFunc)(int, int, int);
+    int(*newCFunc)(int, int, int) = NULL;
     ffi_closure *cloure = ffi_closure_alloc(sizeof(ffi_closure), (void *)&newCFunc);
-    struct ZDUserData userdata = {"我是你爸爸", 8888, newCFunc};
+    struct ZDUserData userdata = {"元旦快乐", 8888, newCFunc};
     // 将newCFunc与bingCFunc关联
     ffi_status status = ffi_prep_closure_loc(cloure, &cif, (void *)bindCFunc, &userdata, newCFunc);
     if (status != FFI_OK) {

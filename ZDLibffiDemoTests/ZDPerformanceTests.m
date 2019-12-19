@@ -5,6 +5,7 @@
 //  Created by Zero.D.Saber on 2019/12/17.
 //  Copyright © 2019 Zero.D.Saber. All rights reserved.
 //
+//  原生方法、Invocation、libffi调用方法的性能测试
 
 #import <XCTest/XCTest.h>
 #import "NSObject+ZDAOP.h"
@@ -29,7 +30,7 @@ FOUNDATION_EXPORT NSUInteger const MaxCount;
             
             ffi_cif cif;
             ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_pointer, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
-            ffi_prep_cif(&cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_pointer, argTypes);
+            ffi_prep_cif(&cif, FFI_DEFAULT_ABI, (uint)signature.numberOfArguments, &ffi_type_pointer, argTypes);
             
             NSInteger arg1 = 100;
             NSString *arg2 = @"hello";

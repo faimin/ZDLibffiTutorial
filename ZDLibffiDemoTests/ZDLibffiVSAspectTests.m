@@ -29,7 +29,7 @@ FOUNDATION_EXPORT NSUInteger const MaxCount;
         //NSLog(@"###########收到Hook信息 ==> 小狗%zd岁了, %@, %@", a, b, c);
     }];
 #else
-    [self aspect_hookSelector:selector withOptions:AspectPositionAfter usingBlock:^(id<AspectInfo> info, NSInteger a, NSString *b, id c){
+    [self.class aspect_hookSelector:selector withOptions:AspectPositionAfter usingBlock:^(id<AspectInfo> info, NSInteger a, NSString *b, id c){
         
     } error:nil];
 #endif
