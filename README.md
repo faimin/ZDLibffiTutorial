@@ -269,7 +269,7 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 
 ### 其他：
 
-> 通过`消息转发`和`libffi`两种方式实现对block的`hook`
+> 通过`消息转发`和`libffi`两种方式实现对`block`的`hook`
 
 + [ZDBlockHook](https://github.com/faimin/ZDBlockHook)
 
@@ -284,3 +284,5 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 - [使用libffi实现AOP](https://juejin.im/post/5a600d20518825732c539622)
 
 - [动态调用&定义C函数](https://www.jianshu.com/p/92d4c06223e7)
+
+- [Stinger](https://github.com/eleme/Stinger)
