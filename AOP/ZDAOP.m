@@ -10,6 +10,8 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 
+static NSString *const ZD_Prefix = @"ZDAOP_";
+
 //************************************
 #pragma mark - liffi Info
 #pragma mark -
@@ -133,6 +135,12 @@ static void ZD_ffi_closure_func(ffi_cif *cif, void *ret, void **args, void *user
     }
 }
 
+static const SEL ZD_AssociatedKey(SEL selector) {
+    NSCAssert(selector != NULL, @"selector不能为NULL");
+    NSString *selectorString = [ZD_Prefix stringByAppendingString:NSStringFromSelector(selector)];
+    const SEL key = NSSelectorFromString(selectorString);
+    return key;
+}
 
 void ZD_CoreHookFunc(id obj, Method method, ZDHookOption option, id callback) {
     if (!obj || !method) {
@@ -140,14 +148,14 @@ void ZD_CoreHookFunc(id obj, Method method, ZDHookOption option, id callback) {
         return;
     }
     
-    SEL selector = method_getName(method);
-    if (objc_getAssociatedObject(obj, selector)) {
+    const SEL key = ZD_AssociatedKey(method_getName(method));
+    if (objc_getAssociatedObject(obj, key)) {
         return;
     }
     
     ZDFfiHookInfo *info = [ZDFfiHookInfo infoWithObject:obj method:method option:option callback:callback];
     // info需要被强引用，否则会出现内存crash
-    objc_setAssociatedObject(obj, selector, info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(obj, key, info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     
     const unsigned int argsCount = method_getNumberOfArguments(method);
     // 构造参数类型列表
