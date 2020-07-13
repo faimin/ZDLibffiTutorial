@@ -66,7 +66,7 @@ static int cFunc(int a , int b, int c) {
 #pragma mark - 调用OC方法
 
 // 直接调用OC方法
-- (void)testCallObjC {
+- (void)testCallObjC1 {
     SEL selector = @selector(a:b:c:);
     NSMethodSignature *signature = [self methodSignatureForSelector:selector];
     
@@ -94,6 +94,45 @@ static int cFunc(int a , int b, int c) {
     NSString *ret = [NSString stringWithFormat:@"%zd + %@ + %@", a, b, c];
     NSLog(@"result = %@", ret);
     return ret;
+}
+
+- (void)testCallObjC2 {
+    SEL selector = @selector(aa:bb:cc:);
+    NSMethodSignature *signature = [self methodSignatureForSelector:selector];
+    
+    ffi_cif *cif = alloca(sizeof(ffi_cif));
+    ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_schar, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
+    ffi_prep_cif(cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_sint, argTypes);
+    
+    NSInteger arg1 = 100;
+    NSString *arg2 = @"hello";
+    id arg3 = NSObject.class;
+    void *args[] = {(void *)&self, &selector, &arg1, &arg2, &arg3};
+
+//    https://github.com/bang590/JSPatch/blob/e80a5573af223936647e5869871804bfd7751d4f/Extensions/JPCFunction/JPCFunction.m
+//    // 正常
+//    IMP afunc = [self methodForSelector:selector];
+//    void *retPtr = alloca(sizeof(int));
+//    ffi_call(cif, afunc, retPtr, args);
+//    NSLog(@"===== %d", *(int *)retPtr);
+    
+    // 如果先定义ret再获取bfunc则crash。why？
+    IMP bfunc = [self methodForSelector:selector];
+    int ret;
+    ffi_call(cif, bfunc, &ret, args);
+    NSLog(@"===== %d", ret);
+    
+//    // crash
+//    int ret;
+//    IMP bfunc = [self methodForSelector:selector];
+//    ffi_call(cif, bfunc, &ret, args);
+//    NSLog(@"===== %d", ret);
+}
+
+- (NSInteger)aa:(NSInteger)a bb:(NSString *)b cc:(id)c {
+    NSString *ret = [NSString stringWithFormat:@"%zd + %@ + %@", a, b, c];
+    NSLog(@"result = %@", ret);
+    return 100;
 }
 
 #pragma mark - --------------------------
