@@ -273,6 +273,17 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 
 + [ZDBlockHook](https://github.com/faimin/ZDBlockHook)
 
+### libffi编译
+
+```
+1. `python generate-darwin-source-and-headers.py --only-ios`
+2. open `libffi.xcodeproj`
+3. select scheme `libffi-iOS` and device `Generic iOS Device`
+4. click "Product - Build"
+
+If success, you would see a "Product/libffi.a" in the side bar, you can right click it to get the lib in the finder.
+```
+
 ### 参考：
 
 - [libffi](https://github.com/libffi/libffi)
@@ -286,3 +297,5 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 - [动态调用&定义C函数](https://www.jianshu.com/p/92d4c06223e7)
 
 - [Stinger](https://github.com/eleme/Stinger)
+
+- [libffi编译方法](https://github.com/libffi/libffi/issues/510#issuecomment-654689416)
