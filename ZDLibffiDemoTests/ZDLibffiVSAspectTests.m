@@ -12,7 +12,7 @@
 #import <Aspects/Aspects.h>
 
 FOUNDATION_EXPORT NSUInteger const MaxCount;
-#define HOOK_Libffi (1)
+
 
 @interface ZDLibffiVSAspectTests : XCTestCase
 
@@ -21,6 +21,7 @@ FOUNDATION_EXPORT NSUInteger const MaxCount;
 @implementation ZDLibffiVSAspectTests
 
 // 执行被hook后的OC方法的效率
+#define HOOK_Libffi (0)
 - (void)testOCPerformanceAfterHook {
     printf("********************* %s\n", __PRETTY_FUNCTION__);
     SEL selector = @selector(a:b:c:);
