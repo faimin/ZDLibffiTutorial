@@ -77,11 +77,17 @@ static int cFunc(int a , int b, int c) {
     NSInteger arg1 = 100;
     NSString *arg2 = @"hello";
     id arg3 = NSObject.class;
-    void *args[] = {&self, &selector, &arg1, &arg2, &arg3};
+    void *args[] = {(void *)&self, &selector, &arg1, &arg2, &arg3};
     __unsafe_unretained id ret = nil;
     IMP func = [self methodForSelector:selector];
     ffi_call(cif, func, &ret, args);
     NSLog(@"===== %@", ret);
+    
+//    https://github.com/bang590/JSPatch/blob/e80a5573af223936647e5869871804bfd7751d4f/Extensions/JPCFunction/JPCFunction.m
+//    void *retPtr = alloca(sizeof(int));
+//    IMP afunc = [self methodForSelector:selector];
+//    ffi_call(cif, afunc, retPtr, args);
+//    NSLog(@"===== %d", *(int *)retPtr);
 }
 
 - (id)a:(NSInteger)a b:(NSString *)b c:(id)c {
