@@ -96,7 +96,8 @@ static int cFunc(int a , int b, int c) {
     
     ffi_cif *cif = alloca(sizeof(ffi_cif));
     ffi_type *argTypes[] = {&ffi_type_pointer, &ffi_type_schar, &ffi_type_sint, &ffi_type_pointer, &ffi_type_pointer};
-    ffi_prep_cif(cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, &ffi_type_sint, argTypes);
+    ffi_type *retType = &ffi_type_sint;
+    ffi_prep_cif(cif, FFI_DEFAULT_ABI, (uint32_t)signature.numberOfArguments, retType, argTypes);
     
     NSInteger arg1 = 100;
     NSString *arg2 = @"hello";
@@ -107,17 +108,19 @@ static int cFunc(int a , int b, int c) {
 #if 0
     // 正常
     IMP afunc = [self methodForSelector:selector];
-    void *retPtr = alloca(sizeof(int));
+    void *retPtr = alloca(retType->size);
     ffi_call(cif, afunc, retPtr, args);
     NSLog(@"===== %d", *(int *)retPtr);
 #endif
     
+#if 1
     // 正常
     // 如果先定义ret再获取bfunc则crash。why？
     IMP bfunc = [self methodForSelector:selector];
     int ret;
     ffi_call(cif, bfunc, &ret, args);
     NSLog(@"===== %d", ret);
+#endif
     
 #if 0
     // crash
@@ -128,7 +131,7 @@ static int cFunc(int a , int b, int c) {
 #endif
 }
 
-- (NSInteger)aa:(NSInteger)a bb:(NSString *)b cc:(id)c {
+- (int)aa:(NSInteger)a bb:(NSString *)b cc:(id)c {
     NSString *ret = [NSString stringWithFormat:@"%zd + %@ + %@", a, b, c];
     NSLog(@"result = %@", ret);
     return 100;
