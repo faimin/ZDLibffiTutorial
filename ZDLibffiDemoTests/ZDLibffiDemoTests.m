@@ -82,12 +82,6 @@ static int cFunc(int a , int b, int c) {
     IMP func = [self methodForSelector:selector];
     ffi_call(cif, func, &ret, args);
     NSLog(@"===== %@", ret);
-    
-//    https://github.com/bang590/JSPatch/blob/e80a5573af223936647e5869871804bfd7751d4f/Extensions/JPCFunction/JPCFunction.m
-//    void *retPtr = alloca(sizeof(int));
-//    IMP afunc = [self methodForSelector:selector];
-//    ffi_call(cif, afunc, retPtr, args);
-//    NSLog(@"===== %d", *(int *)retPtr);
 }
 
 - (id)a:(NSInteger)a b:(NSString *)b c:(id)c {
@@ -110,23 +104,28 @@ static int cFunc(int a , int b, int c) {
     void *args[] = {(void *)&self, &selector, &arg1, &arg2, &arg3};
 
 //    https://github.com/bang590/JSPatch/blob/e80a5573af223936647e5869871804bfd7751d4f/Extensions/JPCFunction/JPCFunction.m
-//    // 正常
-//    IMP afunc = [self methodForSelector:selector];
-//    void *retPtr = alloca(sizeof(int));
-//    ffi_call(cif, afunc, retPtr, args);
-//    NSLog(@"===== %d", *(int *)retPtr);
+#if 0
+    // 正常
+    IMP afunc = [self methodForSelector:selector];
+    void *retPtr = alloca(sizeof(int));
+    ffi_call(cif, afunc, retPtr, args);
+    NSLog(@"===== %d", *(int *)retPtr);
+#endif
     
+    // 正常
     // 如果先定义ret再获取bfunc则crash。why？
     IMP bfunc = [self methodForSelector:selector];
     int ret;
     ffi_call(cif, bfunc, &ret, args);
     NSLog(@"===== %d", ret);
     
-//    // crash
-//    int ret;
-//    IMP bfunc = [self methodForSelector:selector];
-//    ffi_call(cif, bfunc, &ret, args);
-//    NSLog(@"===== %d", ret);
+#if 0
+    // crash
+    int ret;
+    IMP bfunc = [self methodForSelector:selector];
+    ffi_call(cif, bfunc, &ret, args);
+    NSLog(@"===== %d", ret);
+#endif
 }
 
 - (NSInteger)aa:(NSInteger)a bb:(NSString *)b cc:(id)c {
