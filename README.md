@@ -275,13 +275,25 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 
 ### libffi编译
 
-```
+> 笔者其实更倾向于直接使用源码而不是编译成静态库，因为静态库需要适配多种架构，比较麻烦。
+>
+> 直接用源码不用考虑架构问题，而且可以很好的支持`modulemap`，在`iOS`混编环境中更容易使用。
+
+```shell
 1. `python generate-darwin-source-and-headers.py --only-ios`
 2. open `libffi.xcodeproj`
 3. select scheme `libffi-iOS` and device `Generic iOS Device`
 4. click "Product - Build"
 
 If success, you would see a "Product/libffi.a" in the side bar, you can right click it to get the lib in the finder.
+```
+
+### ZDLibffi
+
+笔者基于当前最新的`3.4.2`版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
+
+```ruby
+pod 'ZDLibffi'
 ```
 
 ### 参考：
