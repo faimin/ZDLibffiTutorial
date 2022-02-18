@@ -1,24 +1,20 @@
 PODS:
   - Aspects (1.4.1)
-  - libffi-core (1.2.0)
-  - ReactiveObjC (3.1.1)
+  - ZDLibffi (0.0.3)
 
 DEPENDENCIES:
   - Aspects
-  - libffi-core
-  - ReactiveObjC
+  - ZDLibffi
 
 SPEC REPOS:
   trunk:
     - Aspects
-    - libffi-core
-    - ReactiveObjC
+    - ZDLibffi
 
 SPEC CHECKSUMS:
   Aspects: 7595ba96a6727a58ebcbfc954497fc5d2fdde546
-  libffi-core: c4049ed88381fee5c0a31d26c860fc427d3c301c
-  ReactiveObjC: 011caa393aa0383245f2dcf9bf02e86b80b36040
+  ZDLibffi: 6d5bebe675e0856c3703a501c3c83897c67c1ffc
 
-PODFILE CHECKSUM: c584de3b777c6b9aa756880f1050ca4d63b56e50
+PODFILE CHECKSUM: d9257fd1cbf24d784245f57c1cf17c75a51f7504
 
-COCOAPODS: 1.8.4
+COCOAPODS: 1.11.2

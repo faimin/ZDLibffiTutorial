@@ -1,0 +1,6 @@
+module ZDLibffi {
+  umbrella header "ZDLibffi-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -9,11 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import "ZDBlockDefine.h"
-#if __has_include(<ffi.h>)
-#import <ffi.h>
-#elif __has_include("ffi.h")
-#import "ffi.h"
-#endif
+@import ZDLibffi;
 
 NS_ASSUME_NONNULL_BEGIN
 

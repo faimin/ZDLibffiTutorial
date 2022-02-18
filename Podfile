@@ -6,9 +6,9 @@ target 'ZDLibffiDemo' do
   # use_frameworks!
 
   # Pods for ZDLibffiDemo
-  pod 'libffi-core'
+  pod 'ZDLibffi'
   pod 'Aspects'
-  pod 'ReactiveObjC'
+  #pod 'ReactiveObjC'
 
   target 'ZDLibffiDemoTests' do
     inherit! :search_paths
