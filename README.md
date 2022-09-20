@@ -160,8 +160,6 @@ static void bindCFunc(ffi_cif *cif, int *ret, void **args, void *userdata) {
 > 
 > 1. 方法交换
 > 
->         什么addMethod啊、replaceMethod啊，exchangMethod啊
-> 
 > 2. 消息转发（[Aspects](https://github.com/steipete/Aspects)）
 > 
 > 3. 分类覆盖原方法
@@ -251,7 +249,7 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
    > 
    > + 支持调用`C`、`Objective-C`
    > 
-   > + 快
+   > + 执行速度快
    > 
    > + 可以做到像[Aspects](https://github.com/steipete/Aspects)一样多次`hook`同一方法
    > 
@@ -259,7 +257,7 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 
 2. 缺点：
    
-   > + 构建模版函数时像构建`NSInvocation`一样撕心裂肺
+   > + 构建模版函数时略繁琐
 
 3. 使用场景：
    
@@ -277,20 +275,21 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 
 > 笔者其实更倾向于直接使用源码而不是编译成静态库，因为静态库需要适配多种架构，比较麻烦。
 >
-> 直接用源码不用考虑架构问题，而且可以很好的支持`modulemap`，在`iOS`混编环境中更容易使用。
+> 直接用源码不用考虑架构问题，而且还可以很好的支持`modulemap`，在`iOS`混编环境中更易使用。
 
 ```shell
-1. `python generate-darwin-source-and-headers.py --only-ios`
-2. open `libffi.xcodeproj`
-3. select scheme `libffi-iOS` and device `Generic iOS Device`
-4. click "Product - Build"
+1. `./autogen.sh`
+2. `python generate-darwin-source-and-headers.py --only-ios`
+3. open `libffi.xcodeproj`
+4. select scheme `libffi-iOS` and device `Generic iOS Device`
+5. click "Product - Build"
 
 If success, you would see a "Product/libffi.a" in the side bar, you can right click it to get the lib in the finder.
 ```
 
 ### ZDLibffi
 
-笔者基于当前最新的`3.4.2`版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
+笔者基于当前最新的 [3.4.2](https://github.com/libffi/libffi/releases/tag/v3.4.2) 版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
 
 ```ruby
 pod 'ZDLibffi'
