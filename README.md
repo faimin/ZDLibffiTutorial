@@ -1,6 +1,6 @@
 # libffi
 
-### 一、libffi简介
+## 一、libffi简介
 
 >  维基百科： 
 >
@@ -12,7 +12,7 @@
 
     它也可以生成一个`闭包`(`ffi_closure`)，并同时得到一个函数指针`newIMP`，把这个新的函数指针`newIMP`与自定义的函数`void xx_func(ffi_cif *cif, void *ret, void **args, void *userdata)` 关联到一起，然后当我们执行`newIMP`时，会执行到我们自定义的`xx_func_`函数里（这个函数的参数格式是固定的），这里我们可以获得所有参数的地址和返回值以及自定义数据`userdata`。最后我们通过`ffi_call`函数来调用其他函数，简要流程是通过模板`cif`和`参数值`，把参数都按规则塞到栈/寄存器，然后调用的函数可以按规则获取到参数，调用完再获取返回值，最后记得释放内存。
 
-### 二、用法
+## 二、用法
 
 我们都知道`Objective-C`底层最终都会转成`objc_msgsend`这个`C`层的函数，而 `libffi` 能调用任意 `C` 函数，所以这也是`libffi`支持`Objective-C`的原因。`libffi`底层也是用汇编实现的。
 
@@ -235,7 +235,7 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 </details>
 
 
-### 三、如何 hook 单个实例对象？
+## 三、如何 hook 单个实例对象？
 
 > 只提供思路
 
@@ -264,14 +264,15 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
    > + `hook` 原生方法
    > 
    > + 替代`performSelector:`、`NSInvocation`调用`Objective-C`方法
+   
 
-### 其他：
+    > 通过`消息转发`和`libffi`两种方式实现对`block`的`hook`
 
-> 通过`消息转发`和`libffi`两种方式实现对`block`的`hook`
+    + [ZDBlockHook](https://github.com/faimin/ZDBlockHook)
 
-+ [ZDBlockHook](https://github.com/faimin/ZDBlockHook)
+## 编译：
 
-### libffi编译
+#### libffi编译
 
 > 笔者其实更倾向于直接使用源码而不是编译成静态库，因为静态库需要适配多种架构，比较麻烦。
 >
@@ -287,19 +288,17 @@ static void zdfunc(ffi_cif *cif, void *ret, void **args, void *userdata) {
 If success, you would see a "Product/libffi.a" in the side bar, you can right click it to get the lib in the finder.
 ```
 
-### ZDLibffi
+#### ZDLibffi
 
-笔者基于当前最新的 [3.4.2](https://github.com/libffi/libffi/releases/tag/v3.4.2) 版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
+笔者基于当前最新的 [3.4.3](https://github.com/libffi/libffi/releases/tag/v3.4.3) 版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
 
 ```ruby
 pod 'ZDLibffi'
 ```
 
-### 参考：
+## 参考：
 
 - [libffi](https://github.com/libffi/libffi)
-
-- [libffi-iOS](https://github.com/sunnyxx/libffi-iOS)
 
 - [libffi文档](http://www.chiark.greenend.org.uk/doc/libffi-dev/html/Index.html#Index)
 
