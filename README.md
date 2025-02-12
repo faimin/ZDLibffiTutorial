@@ -2,8 +2,7 @@
 
 ## 一、libffi简介
 
->  维基百科： 
->
+>  维基百科：</br>
 > [libffi](https://github.com/libffi/libffi) 是一个外部函数接口库。它提供了一个C编程语言接口，用于在运行时（而不是编译时）给定有关目标函数的信息来调用本地编译函数。它还实现了相反的功能：`libffi`可以生成一个指向可以接受和解码在运行时定义的参数组合的函数的指针。
 
 `FFI（Foreign Function Interface）`允许以一种语言编写的代码调用另一种语言的代码，而[libffi](https://github.com/libffi/libffi)库提供了最底层的、与架构相关的、完整的`FFI`。`libffi`的作用就相当于编译器，它为多种调用规则提供了一系列高级语言编程接口，然后通过相应接口完成函数调用，底层会根据对应的规则，完成数据准备，生成相应的汇编指令代码。
@@ -16,8 +15,12 @@
 
 我们都知道`Objective-C`底层最终都会转成`objc_msgsend`这个`C`层的函数，而 `libffi` 能调用任意 `C` 函数，所以这也是`libffi`支持`Objective-C`的原因。`libffi`底层也是用汇编实现的。
 
+
+> [**✅ 全部测试case**](./ZDLibffiDemoTests/ZDLibffiDemoTests.m)
+
+
 <details close>
-<summary> 先介绍一下`libffi`使用流程： </summary>
+<summary> 先介绍一下 libffi 使用流程： </summary>
 
 ```c
 //1. 生成参数类型列表
@@ -290,7 +293,7 @@ If success, you would see a "Product/libffi.a" in the side bar, you can right cl
 
 #### ZDLibffi
 
-笔者基于当前最新的 [3.4.3](https://github.com/libffi/libffi/releases/tag/v3.4.3) 版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
+笔者基于当前最新的 [3.4.6](https://github.com/libffi/libffi/releases/tag/v3.4.6) 版本制作了一个源码版本的 [ZDLibffi](https://github.com/faimin/ZDLibffi_iOS)，支持`modulemap`，可以更好的兼容混编开发环境。
 
 ```ruby
 pod 'ZDLibffi'
